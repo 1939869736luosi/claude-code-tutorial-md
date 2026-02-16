@@ -244,3 +244,12 @@ Claude Code 同时提供 VS Code 扩展（图形界面）和 CLI（终端命令�
 | `!` bash 快捷方式 | ✅ | ❌ |
 | Tab 补全 | ✅ | ❌ |
 | 自定义 slash 命令 | ✅ | ✅ |
+
+---
+
+## 📎 相关资源
+
+| 资源 | 说明 |
+|------|------|
+| [🧰 AI 工具箱 · 资源汇总](https://ai-toolkit-collection.pages.dev/) | Claude Code Skills、MCP 服务、开源模型与实用工具 |
+| [📅 7天 AI 工具链全栈进化路线](https://7day-roadmap.pages.dev/) | 从 Obsidian 数据库到自媒体 IP 打造的完整学习路线 |
