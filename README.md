@@ -46,13 +46,87 @@ claude --version
 
 ---
 
+### 1.3.1 ⚠️ 已知问题：Git Bash 检测报错
+
+> [!WARNING]
+> 这是一个 [GitHub 上的已知 bug](https://github.com/anthropics/claude-code/issues)，大量用户反馈即使正确安装了 Git 仍会报错。
+
+**问题现象**：在 VS Code 或 Antigravity 中打开 Claude Code 扩展时，报错：
+
+```
+Claude Code on Windows requires git-bash (https://git-scm.com/downloads/win).
+If installed but not in PATH, set environment variable pointing to your bash.exe...
+```
+
+**根本原因**：扩展内部用 `where.exe git` 命令检测 Git 是否存在。但 VS Code / Antigravity 的进程环境可能缺少 `System32` 或 Git `cmd` 目录的 PATH，导致检测失败。
+
+> [!CAUTION]
+> **`CLAUDE_CODE_GIT_BASH_PATH` 环境变量不能解决此问题！** 很多教程建议设置这个变量，但扩展的初始检测函数（`ZD6()`）并不读取此变量，它只执行 `where.exe git`。这个变量是给后续功能使用的，不影响初始检测。
+
+**✅ 解决方案：修补扩展源码**
+
+在 PowerShell 中运行以下命令（一键修补）：
+
+```powershell
+# 定位 extension.js 文件
+$file = (Get-ChildItem "$env:USERPROFILE\.vscode\extensions\anthropic.claude-code-*\extension.js" -ErrorAction SilentlyContinue) ??
+        (Get-ChildItem "$env:USERPROFILE\.antigravity\extensions\anthropic.claude-code-*\extension.js" -ErrorAction SilentlyContinue)
+
+if (-not $file) { Write-Host "ERROR: Claude Code extension not found"; return }
+
+$content = [System.IO.File]::ReadAllText($file.FullName)
+
+# 查找并替换 git-bash 检测逻辑
+$pattern = 'catch{throw Error("Claude Code on Windows requires git-bash'
+$idx = $content.IndexOf($pattern)
+
+if ($idx -ge 0) {
+    # 找到完整的 catch 块并替换
+    $catchStart = $idx
+    $catchEnd = $content.IndexOf(')}")', $idx) + 3
+    $oldBlock = $content.Substring($catchStart, $catchEnd - $catchStart)
+    $content = $content.Replace($oldBlock, 'catch{return}')
+    [System.IO.File]::WriteAllText($file.FullName, $content)
+    Write-Host "SUCCESS: Git-bash check bypassed in $($file.FullName)"
+} else {
+    Write-Host "Already patched or pattern changed in new version"
+}
+```
+
+> [!IMPORTANT]
+> **扩展更新会覆盖补丁！** 建议：
+> 1. 在 VS Code / Antigravity 设置中添加 `"extensions.autoUpdate": false` 关闭自动更新
+> 2. 保存上面的补丁命令，扩展更新后重新运行即可
+
+---
+
 ### 1.4 配置环境变量
 
 > 最好下面两个一起配置
 
 #### 1.4.1 配置 settings.json 文件
 
-创建（如果不存在）或编辑 `C:\Users\用户名\.claude\settings.json`，输入以下值并保存：
+创建（如果不存在）或编辑 `C:\Users\用户名\.claude\settings.json`。
+
+**方式一：使用 `apiKeyHelper`（推荐 ⭐）**
+
+通过命令返回 API Key，更安全（Key 不直接明文写在配置中）：
+
+```json
+{
+  "apiKeyHelper": "echo 替换为您的API-Key",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://your-api-provider.com/v1/",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "12000"
+  },
+  "permissions": {
+    "allow": [],
+    "deny": []
+  }
+}
+```
+
+**方式二：直接写在 `env` 中**
 
 ```json
 {
@@ -67,6 +141,8 @@ claude --version
   }
 }
 ```
+
+> 两种方式的区别：`apiKeyHelper` 通过执行命令获取 Key，不会在配置文件中暴露明文密钥，更适合团队共享或版本控制场景。`env.ANTHROPIC_AUTH_TOKEN` 直接写死 Key，简单直接但安全性稍差。
 
 ---
 
@@ -95,6 +171,7 @@ echo Setting environment variables...
 setx ANTHROPIC_AUTH_TOKEN "%API_KEY%"
 setx ANTHROPIC_BASE_URL "https://www.fucheers.top"
 setx CLAUDE_CODE_MAX_OUTPUT_TOKENS "12000"
+setx CLAUDE_CODE_GIT_BASH_PATH "C:\Program Files\Git\bin\bash.exe"
 
 echo.
 echo ========================================
@@ -105,6 +182,7 @@ echo Environment variables set:
 echo   ANTHROPIC_AUTH_TOKEN = %API_KEY%
 echo   ANTHROPIC_BASE_URL = https://www.fucheers.top
 echo   CLAUDE_CODE_MAX_OUTPUT_TOKENS = 12000
+echo   CLAUDE_CODE_GIT_BASH_PATH = C:\Program Files\Git\bin\bash.exe
 echo.
 echo Please restart your terminal for changes to take effect.
 echo.
@@ -112,6 +190,8 @@ pause
 ```
 
 下载这个 bat 文件，输入 API Key 回车即设置完成。
+
+> **注意**：`CLAUDE_CODE_GIT_BASH_PATH` 主要用于 CLI 版 `claude` 命令。如果 VS Code/Antigravity 扩展仍报错，请参考 [1.3.1 节](#131-️-已知问题git-bash-检测报错) 使用源码补丁方案。
 
 ---
 
@@ -192,6 +272,13 @@ claude
 
 ## 4. VS Code 扩展与 Claude Code CLI
 
+> [!TIP]
+> 以下内容同样适用于 **Antigravity IDE**（Google 基于 VS Code 的 fork）。两者的区别仅在扩展安装路径：
+> - VS Code：`%USERPROFILE%\.vscode\extensions\anthropic.claude-code-*\`
+> - Antigravity：`%USERPROFILE%\.antigravity\extensions\anthropic.claude-code-*\`
+>
+> 设置界面和操作方式完全一致。
+
 ### 扩展设置
 
 `~/.claude/settings.json` 中的 Claude Code 设置，在 VS Code 和 CLI 之间共享，用于配置环境变量、hooks 和 MCP servers。有关详细信息，请参阅 [Settings](https://code.claude.com/docs/en/settings)。
@@ -213,10 +300,25 @@ claude
 | `enableNewConversationShortcut` | `true` | 启用 Cmd/Ctrl+N 以开始新对话 |
 | `hideOnboarding` | `false` | 隐藏入门引导卡片（生产环境推荐） |
 | `respectGitIgnore` | `true` | 从文件搜索中排除 `.gitignore` 匹配项 |
-| `environmentVariables` | `[]` | 为 Claude 进程设置环境变量。共享配置请使用 Claude Code 设置 |
+| `environmentVariables` | `{}` | 为 Claude 进程设置环境变量。共享配置请使用 Claude Code 设置 |
 | **`disableLoginPrompt`** | **`false`** | **跳过身份验证提示（用于第三方提供商设置）** |
 | `allowDangerouslySkipPermissions` | `false` | 跳过所有权限检查请求，**谨慎使用** |
 | `claudeProcessWrapper` | `-` | 用于启动 Claude 进程的可执行文件路径 |
+
+> [!CAUTION]
+> **`environmentVariables` 必须使用对象格式 `{}`，不能用数组 `[]`！**
+>
+> 错误写法会导致 `v is not iterable` 报错，使扩展无法启动。
+>
+> ```json
+> // ❌ 错误：使用数组
+> "claudeCode.environmentVariables": ["ANTHROPIC_BASE_URL=https://..."]
+>
+> // ✅ 正确：使用对象
+> "claudeCode.environmentVariables": {
+>     "ANTHROPIC_BASE_URL": "https://..."
+> }
+> ```
 
 ### 关键设置：Disable Login Prompt
 
@@ -244,6 +346,35 @@ Claude Code 同时提供 VS Code 扩展（图形界面）和 CLI（终端命令�
 | `!` bash 快捷方式 | ✅ | ❌ |
 | Tab 补全 | ✅ | ❌ |
 | 自定义 slash 命令 | ✅ | ✅ |
+
+---
+
+## 5. 🔄 更换 API 提供商
+
+当需要更换 API 服务商（例如从 Kimi 切换到其他兼容 Anthropic API 格式的提供商），**只需修改 1 个文件的 2 个字段**：
+
+### 修改文件
+
+`C:\Users\用户名\.claude\settings.json`
+
+```diff
+ {
+-  "apiKeyHelper": "echo sk-old-key-xxx",
++  "apiKeyHelper": "echo sk-new-key-xxx",
+   "env": {
+-    "ANTHROPIC_BASE_URL": "https://old-provider.com/v1/"
++    "ANTHROPIC_BASE_URL": "https://new-provider.com/v1/"
+   }
+ }
+```
+
+### 操作步骤
+
+1. 编辑 `~/.claude/settings.json`，修改 `apiKeyHelper` 和 `ANTHROPIC_BASE_URL`
+2. 在 VS Code / Antigravity 中按 `Ctrl+Shift+P` → 输入 `Reload Window` 回车
+3. 完成 ✅
+
+> 如果使用 CLI 方式（终端中运行 `claude`），关闭终端重新打开即可。
 
 ---
 
