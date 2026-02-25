@@ -106,43 +106,100 @@ if ($idx -ge 0) {
 
 #### 1.4.1 配置 settings.json 文件
 
-创建（如果不存在）或编辑 `C:\Users\用户名\.claude\settings.json`。
+> [!IMPORTANT]
+> **文件路径**：`C:\Users\<你的用户名>\.claude\settings.json`
+>
+> 例如用户名为 `Lenovo`，则完整路径为：`C:\Users\Lenovo\.claude\settings.json`
+>
+> 如果 `.claude` 文件夹或 `settings.json` 不存在，请手动创建。
 
-**方式一：使用 `apiKeyHelper`（推荐 ⭐）**
+这个文件是 Claude Code **最核心的配置文件**，控制 API 连接、权限和 MCP 服务器。以下是完整的配置说明。
 
-通过命令返回 API Key，更安全（Key 不直接明文写在配置中）：
+**API Key 配置（二选一）**
+
+| 方式 | 字段 | 示例值 | 安全性 | 适用场景 |
+|------|------|--------|--------|----------|
+| **方式一（推荐 ⭐）** | `apiKeyHelper` | `"echo sk-your-key"` | 高（Key 不明文存储） | 团队共享、版本控制 |
+| 方式二 | `env.ANTHROPIC_AUTH_TOKEN` | `"sk-your-key"` | 低（明文写死） | 个人快速使用 |
+
+**完整配置示例（含 MCP 服务器）**
 
 ```json
 {
-  "apiKeyHelper": "echo 替换为您的API-Key",
+  // ========================
+  // 🔑 API 配置（更换服务商时只改这两行）
+  // ========================
+  "apiKeyHelper": "echo sk-your-api-key-here",     // ← 改这里：换成新的 API Key
   "env": {
-    "ANTHROPIC_BASE_URL": "https://your-api-provider.com/v1/",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "12000"
+    "ANTHROPIC_BASE_URL": "https://api.kimi.com/coding/",  // ← 改这里：换成新的 API 地址
+    "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Program Files\\Git\\bin\\bash.exe"
   },
+
+  // ========================
+  // 🔒 权限控制
+  // ========================
   "permissions": {
-    "allow": [],
+    "allow": [
+      "Bash(ffmpeg:*)"    // 允许 Claude 执行 ffmpeg 命令
+    ],
     "deny": []
+  },
+
+  // ========================
+  // 🔌 MCP 服务器（可选，按需添加）
+  // ========================
+  "mcpServers": {
+    "granola": {
+      "type": "sse",
+      "url": "https://mcp.granola.ai/mcp"
+    },
+    "v0": {
+      "command": "D:\\Program Files\\nodejs\\npx.cmd",
+      "args": ["-y", "v0-mcp@latest"],
+      "timeout": 60000,
+      "env": {
+        "V0_API_KEY": "your-v0-api-key-here",
+        "PATH": "D:\\Program Files\\nodejs;C:\\Windows\\System32;C:\\Windows"
+      }
+    },
+    "weixin-reader": {
+      "command": "C:\\Users\\用户名\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "args": ["D:\\your-project\\wexin-read-mcp\\src\\server.py"],
+      "timeout": 30000
+    },
+    "ChatPRD": {
+      "command": "D:\\Program Files\\nodejs\\npx.cmd",
+      "args": ["-y", "mcp-remote", "https://app.chatprd.ai/mcp"],
+      "timeout": 60000,
+      "env": {
+        "PATH": "D:\\Program Files\\nodejs;C:\\Windows\\System32;C:\\Windows"
+      }
+    }
   }
 }
 ```
 
-**方式二：直接写在 `env` 中**
+> [!NOTE]
+> 上面 JSON 中的注释仅用于说明，**实际使用时请删除所有 `//` 注释**（JSON 标准不支持注释）。
 
-```json
-{
-  "env": {
-    "ANTHROPIC_AUTH_TOKEN": "替换为您的API Key",
-    "ANTHROPIC_BASE_URL": "https://www.fucheers.top",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "12000"
-  },
-  "permissions": {
-    "allow": [],
-    "deny": []
-  }
-}
-```
+**字段逐行解释**
 
-> 两种方式的区别：`apiKeyHelper` 通过执行命令获取 Key，不会在配置文件中暴露明文密钥，更适合团队共享或版本控制场景。`env.ANTHROPIC_AUTH_TOKEN` 直接写死 Key，简单直接但安全性稍差。
+| 字段 | 作用 | 何时需要修改 |
+|------|------|-------------|
+| `apiKeyHelper` | 通过命令返回 API Key | **更换 API 服务商时** |
+| `env.ANTHROPIC_BASE_URL` | API 服务商地址 | **更换 API 服务商时** |
+| `env.CLAUDE_CODE_GIT_BASH_PATH` | Git Bash 路径 | 仅 Git 安装路径不同时 |
+| `permissions.allow` | 允许 Claude 自动执行的命令 | 按需添加 |
+| `mcpServers.*` | MCP 服务器配置 | 添加/删除 MCP 服务时 |
+
+> [!TIP]
+> **关于 MCP 服务器**：
+> - `granola`：会议记录管理，通过 SSE 连接
+> - `v0`：Vercel v0 UI 原型生成，需要 [V0 API Key](https://v0.dev)
+> - `weixin-reader`：微信公众号文章抓取（Python 实现）
+> - `ChatPRD`：AI 产品文档生成
+>
+> 每个 MCP 服务器的 `env.PATH` 需要手动补全 `nodejs` 和 `System32` 路径，因为 VS Code / Antigravity 的进程 PATH 可能不完整。
 
 ---
 
@@ -351,30 +408,55 @@ Claude Code 同时提供 VS Code 扩展（图形界面）和 CLI（终端命令�
 
 ## 5. 🔄 更换 API 提供商
 
-当需要更换 API 服务商（例如从 Kimi 切换到其他兼容 Anthropic API 格式的提供商），**只需修改 1 个文件的 2 个字段**：
+当需要更换 API 服务商时（例如从 Kimi 切换到其他兼容 Anthropic API 格式的服务商），**只需修改 1 个文件的 2 个字段**。
 
-### 修改文件
+### 📁 需要修改的文件
 
-`C:\Users\用户名\.claude\settings.json`
+```
+C:\Users\<你的用户名>\.claude\settings.json
+```
+
+### 🔧 需要修改的字段
+
+| 字段 | 改什么 | 示例 |
+|------|--------|------|
+| `apiKeyHelper` | `echo` 后面的 API Key | `"echo sk-new-xxx"` |
+| `env.ANTHROPIC_BASE_URL` | API 服务商的地址 | `"https://new-provider.com/v1/"` |
+
+### 📝 修改示例（diff 对比）
 
 ```diff
  {
--  "apiKeyHelper": "echo sk-old-key-xxx",
-+  "apiKeyHelper": "echo sk-new-key-xxx",
+-  "apiKeyHelper": "echo sk-kimi-旧的Key",
++  "apiKeyHelper": "echo sk-new-新的Key",
    "env": {
--    "ANTHROPIC_BASE_URL": "https://old-provider.com/v1/"
+-    "ANTHROPIC_BASE_URL": "https://api.kimi.com/coding/"
 +    "ANTHROPIC_BASE_URL": "https://new-provider.com/v1/"
    }
  }
 ```
 
-### 操作步骤
+> [!WARNING]
+> **其他字段不要动！** `permissions`、`mcpServers`、`CLAUDE_CODE_GIT_BASH_PATH` 等字段与 API 服务商无关，改了可能导致功能异常。
 
-1. 编辑 `~/.claude/settings.json`，修改 `apiKeyHelper` 和 `ANTHROPIC_BASE_URL`
-2. 在 VS Code / Antigravity 中按 `Ctrl+Shift+P` → 输入 `Reload Window` 回车
-3. 完成 ✅
+### ✅ 完整操作步骤
 
-> 如果使用 CLI 方式（终端中运行 `claude`），关闭终端重新打开即可。
+1. 用任意编辑器打开 `C:\Users\<你的用户名>\.claude\settings.json`
+2. 找到 `apiKeyHelper` 行 → 把 `echo` 后面的内容换成新的 API Key
+3. 找到 `ANTHROPIC_BASE_URL` 行 → 把 URL 换成新服务商的地址
+4. 保存文件
+5. **使生效**（二选一）：
+   - **VS Code / Antigravity**：按 `Ctrl+Shift+P` → 输入 `Reload Window` 回车
+   - **CLI 终端**：关闭终端窗口，重新打开后运行 `claude`
+6. 输入 `/status` 确认已连接到新的服务商 ✅
+
+### 🔍 常见第三方 API 服务商参考
+
+| 服务商 | `ANTHROPIC_BASE_URL` 格式 |
+|--------|---------------------------|
+| Kimi | `https://api.kimi.com/coding/` |
+| Fucheers | `https://www.fucheers.top` |
+| 其他兼容服务商 | 参考服务商文档中的 Base URL |
 
 ---
 
