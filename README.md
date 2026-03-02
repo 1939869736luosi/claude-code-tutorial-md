@@ -283,7 +283,7 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 # 安装 claude-code
 npm install -g @anthropic-ai/claude-code --registry=https://registry.npmmirror.com
 
-# 初始化配置
+# 初始化配置（跳过首次引导流程）
 node --eval "
     const homeDir = os.homedir();
     const filePath = path.join(homeDir, '.claude.json');
@@ -294,6 +294,19 @@ node --eval "
         fs.writeFileSync(filePath, JSON.stringify({ hasCompletedOnboarding: true }), 'utf-8');
     }"
 ```
+
+> [!TIP]
+> **关于 `hasCompletedOnboarding`**：
+>
+> 在 `~/.claude.json` 中设置 `"hasCompletedOnboarding": true` 可以**跳过 Claude Code 首次启动的引导流程**（欢迎界面、条款同意、登录提示等）。
+>
+> 但这**不等于跳过 OAuth 登录**。要完全绕过 Anthropic 官方 OAuth，需要三者配合：
+>
+> | 配置 | 作用 |
+> |------|------|
+> | `hasCompletedOnboarding: true`（`~/.claude.json`） | 跳过首次引导流程 |
+> | `disableLoginPrompt: true`（VS Code 扩展设置） | 不弹出登录窗口 |
+> | `ANTHROPIC_BASE_URL` + `apiKeyHelper`（`~/.claude/settings.json`） | 使用第三方 API Key 认证 |
 
 ---
 
@@ -327,7 +340,107 @@ claude
 
 ---
 
-## 4. VS Code 扩展与 Claude Code CLI
+## 4. macOS 配置
+
+### 前置条件
+
+确保已安装 Node.js（版本 >= 18）和 Claude Code CLI。
+
+**安装 Node.js**
+
+```bash
+node -v
+```
+
+如果显示 `command not found`，需要先安装：
+
+- 访问 <https://nodejs.org> 下载 macOS 安装包
+- 双击下载的 `.pkg` 文件，按提示完成安装
+
+**安装 Claude Code CLI**
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+下载好了之后验证一下：
+
+```bash
+claude --version
+```
+
+显示版本号说明下载成功。
+
+---
+
+### 配置环境
+
+> [!TIP]
+> 配置其中一个不行，就两个方法一起配置。
+
+#### 方法 1：环境变量设置
+
+编辑 shell 配置文件（根据使用的 shell 选择）：
+
+**如果是 bash（默认）**
+
+```bash
+echo 'export ANTHROPIC_BASE_URL="https://www.fucheers.top"' >> ~/.bash_profile
+echo 'export ANTHROPIC_AUTH_TOKEN="替换为您的API Key"' >> ~/.bash_profile
+source ~/.bash_profile
+```
+
+**如果是 zsh**
+
+```bash
+echo 'export ANTHROPIC_BASE_URL="https://www.fucheers.top"' >> ~/.zshrc
+echo 'export ANTHROPIC_AUTH_TOKEN="替换为您的API Key"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+#### 方法 2：配置 settings.json
+
+执行以下命令一键创建配置文件：
+
+```bash
+mkdir -p ~/.claude
+cat > ~/.claude/settings.json << 'EOF'
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "替换为您的API Key",
+    "ANTHROPIC_BASE_URL": "https://www.fucheers.top"
+  },
+  "permissions": {
+    "allow": [],
+    "deny": []
+  }
+}
+EOF
+```
+
+#### 跳过首次引导（可选）
+
+```bash
+# 在 ~/.claude.json 中标记已完成引导，跳过欢迎界面和登录提示
+node -e "
+const fs = require('fs');
+const path = require('path');
+const filePath = path.join(require('os').homedir(), '.claude.json');
+const content = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : {};
+fs.writeFileSync(filePath, JSON.stringify({ ...content, hasCompletedOnboarding: true }, null, 2));
+console.log('Done: hasCompletedOnboarding set to true');
+"
+```
+
+---
+
+### 启动 Claude Code
+
+打开终端输入 `claude` 回车即可。
+
+---
+
+## 5. VS Code 扩展与 Claude Code CLI
 
 > [!TIP]
 > 以下内容同样适用于 **Antigravity IDE**（Google 基于 VS Code 的 fork）。两者的区别仅在扩展安装路径：
@@ -406,7 +519,7 @@ Claude Code 同时提供 VS Code 扩展（图形界面）和 CLI（终端命令�
 
 ---
 
-## 5. 🔄 更换 API 提供商
+## 6. 🔄 更换 API 提供商
 
 当需要更换 API 服务商时（例如从 Kimi 切换到其他兼容 Anthropic API 格式的服务商），**只需修改 1 个文件的 2 个字段**。
 
@@ -414,6 +527,12 @@ Claude Code 同时提供 VS Code 扩展（图形界面）和 CLI（终端命令�
 
 ```
 C:\Users\<你的用户名>\.claude\settings.json
+```
+
+macOS / Linux：
+
+```
+~/.claude/settings.json
 ```
 
 ### 🔧 需要修改的字段
@@ -441,12 +560,12 @@ C:\Users\<你的用户名>\.claude\settings.json
 
 ### ✅ 完整操作步骤
 
-1. 用任意编辑器打开 `C:\Users\<你的用户名>\.claude\settings.json`
+1. 用任意编辑器打开 `~/.claude/settings.json`
 2. 找到 `apiKeyHelper` 行 → 把 `echo` 后面的内容换成新的 API Key
 3. 找到 `ANTHROPIC_BASE_URL` 行 → 把 URL 换成新服务商的地址
 4. 保存文件
 5. **使生效**（二选一）：
-   - **VS Code / Antigravity**：按 `Ctrl+Shift+P` → 输入 `Reload Window` 回车
+   - **VS Code / Antigravity**：按 `Ctrl+Shift+P`（macOS：`Cmd+Shift+P`）→ 输入 `Reload Window` 回车
    - **CLI 终端**：关闭终端窗口，重新打开后运行 `claude`
 6. 输入 `/status` 确认已连接到新的服务商 ✅
 
