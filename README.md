@@ -252,7 +252,28 @@ pause
 
 ---
 
-### 1.5 打开 Claude Code 终端
+### 1.5 跳过首次引导（可选）
+
+在 PowerShell 中运行以下命令，跳过 Claude Code 首次启动时的欢迎界面和引导流程：
+
+```powershell
+node --eval "
+    const os = require('os');
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(os.homedir(), '.claude.json');
+    const content = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : {};
+    fs.writeFileSync(filePath, JSON.stringify({ ...content, hasCompletedOnboarding: true }, null, 2));
+    console.log('Done: hasCompletedOnboarding set to true');
+"
+```
+
+> [!TIP]
+> 这一步会在 `~/.claude.json` 中写入 `"hasCompletedOnboarding": true`，告诉 Claude Code 已完成引导。配合 `ANTHROPIC_BASE_URL`（第三方 API）和 `disableLoginPrompt`（[§5 VS Code 设置](#关键设置disable-login-prompt)）即可完全跳过 Anthropic 官方 OAuth 登录。
+
+---
+
+### 1.6 打开 Claude Code 终端
 
 打开终端输入 `claude` 回车即可正常使用 Claude。
 
@@ -424,6 +445,8 @@ node --eval "
     } else {
         fs.writeFileSync(filePath, JSON.stringify({ hasCompletedOnboarding: true }), 'utf-8');
     }"
+
+# ✅ 安装完成！接下来请跳转到「§4 配置 Claude Code 模型」设置 API Key 和 Base URL
 ```
 
 > 如果终端提示 `fnm` 命令未找到，请重新打开终端窗口再执行后续命令。
@@ -567,6 +590,9 @@ macOS / Linux：
 ```
 ~/.claude/settings.json
 ```
+
+> [!NOTE]
+> 如果你是通过**环境变量**（`~/.zshrc`、`~/.bash_profile` 或 Windows 系统环境变量）配置的 API 信息，也需要同步修改对应文件中的 `ANTHROPIC_BASE_URL` 和 `ANTHROPIC_AUTH_TOKEN`（或 `ANTHROPIC_API_KEY`）。
 
 ### 🔧 需要修改的字段
 
