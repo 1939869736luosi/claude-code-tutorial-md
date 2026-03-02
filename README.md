@@ -260,87 +260,7 @@ pause
 
 ---
 
-<br/>
-
-> [!NOTE]
-> **以上为 PDF 原文教程内容。** 以下为补充资料，包含一键安装脚本、Claude Code 模型配置以及 VS Code 扩展设置说明，可独立参考。
-
----
-
-## 2. 完整安装脚本（Windows）
-
-```powershell
-# 打开 Windows 终端中的 PowerShell 终端
-# 右键按 Windows 按钮，点击「终端」
-
-# 然后依次执行下面的
-winget install --id Git.Git -e --source winget # 或者参考 https://git-scm.com/install/windows 用其他办法安装 Git
-winget install OpenJS.NodeJS # 或者参考 https://nodejs.org/zh-cn/download 用其他办法安装 Node.js
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-
-# 然后关闭终端窗口，新开一个终端窗口
-
-# 安装 claude-code
-npm install -g @anthropic-ai/claude-code --registry=https://registry.npmmirror.com
-
-# 初始化配置（跳过首次引导流程）
-node --eval "
-    const homeDir = os.homedir();
-    const filePath = path.join(homeDir, '.claude.json');
-    if (fs.existsSync(filePath)) {
-        const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        fs.writeFileSync(filePath, JSON.stringify({ ...content, hasCompletedOnboarding: true }, null, 2), 'utf-8');
-    } else {
-        fs.writeFileSync(filePath, JSON.stringify({ hasCompletedOnboarding: true }), 'utf-8');
-    }"
-```
-
-> [!TIP]
-> **关于 `hasCompletedOnboarding`**：
->
-> 在 `~/.claude.json` 中设置 `"hasCompletedOnboarding": true` 可以**跳过 Claude Code 首次启动的引导流程**（欢迎界面、条款同意、登录提示等）。
->
-> 但这**不等于跳过 OAuth 登录**。要完全绕过 Anthropic 官方 OAuth，需要三者配合：
->
-> | 配置 | 作用 |
-> |------|------|
-> | `hasCompletedOnboarding: true`（`~/.claude.json`） | 跳过首次引导流程 |
-> | `disableLoginPrompt: true`（VS Code 扩展设置） | 不弹出登录窗口 |
-> | `ANTHROPIC_BASE_URL` + `apiKeyHelper`（`~/.claude/settings.json`） | 使用第三方 API Key 认证 |
-
----
-
-## 3. 配置 Claude Code 模型
-
-完成 Claude Code 安装后，请按照以下方式设置环境变量使用 Claude Code 模型。
-
-### macOS 与 Linux
-
-```bash
-export ANTHROPIC_BASE_URL=https://api.kimi.com/coding/
-export ANTHROPIC_API_KEY=sk-kimi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # 这里填在会员页面生成的 API Key
-
-claude
-```
-
-### Windows
-
-```powershell
-$env:ANTHROPIC_BASE_URL="https://api.kimi.com/coding/";
-$env:ANTHROPIC_API_KEY="sk-kimi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # 这里填在会员页面生成的 API Key
-
-claude
-```
-
-### 确认环境变量是否生效
-
-启动 Claude Code 后，在命令输入框输入 `/status`，确认模型状态。
-
-接下来就可以使用 Claude Code 进行开发了！
-
----
-
-## 4. macOS 配置
+## 2. macOS 配置
 
 ### 前置条件
 
@@ -437,6 +357,119 @@ console.log('Done: hasCompletedOnboarding set to true');
 ### 启动 Claude Code
 
 打开终端输入 `claude` 回车即可。
+
+---
+
+<br/>
+
+> [!NOTE]
+> **以上为 PDF 原文教程内容。** 以下为补充资料，包含一键安装脚本、Claude Code 模型配置以及 VS Code 扩展设置说明，可独立参考。
+
+---
+
+## 3. 完整安装脚本
+
+> [!TIP]
+> 若已通过上面的教程完成安装，可跳过本节。以下脚本提供一键安装方式，适合快速部署。
+
+### Windows
+
+```powershell
+# 打开 Windows 终端中的 PowerShell 终端
+# 右键按 Windows 按钮，点击「终端」
+
+# 然后依次执行下面的
+winget install --id Git.Git -e --source winget # 或者参考 https://git-scm.com/install/windows 用其他办法安装 Git
+winget install OpenJS.NodeJS # 或者参考 https://nodejs.org/zh-cn/download 用其他办法安装 Node.js
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+
+# 然后关闭终端窗口，新开一个终端窗口
+
+# 安装 claude-code
+npm install -g @anthropic-ai/claude-code --registry=https://registry.npmmirror.com
+
+# 初始化配置（跳过首次引导流程）
+node --eval "
+    const homeDir = os.homedir();
+    const filePath = path.join(homeDir, '.claude.json');
+    if (fs.existsSync(filePath)) {
+        const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        fs.writeFileSync(filePath, JSON.stringify({ ...content, hasCompletedOnboarding: true }, null, 2), 'utf-8');
+    } else {
+        fs.writeFileSync(filePath, JSON.stringify({ hasCompletedOnboarding: true }), 'utf-8');
+    }"
+```
+
+### macOS 与 Linux
+
+```bash
+# 安装 fnm（快速 Node.js 版本管理器）
+curl -fsSL https://fnm.vercel.app/install | bash
+
+# 新开一个 terminal，让 fnm 生效
+fnm install 24.3.0
+fnm default 24.3.0
+fnm use 24.3.0
+
+# 安装 claude-code
+npm install -g @anthropic-ai/claude-code --registry=https://registry.npmmirror.com
+
+# 初始化配置（跳过首次引导流程）
+node --eval "
+    const homeDir = os.homedir();
+    const filePath = path.join(homeDir, '.claude.json');
+    if (fs.existsSync(filePath)) {
+        const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        fs.writeFileSync(filePath, JSON.stringify({ ...content, hasCompletedOnboarding: true }, null, 2), 'utf-8');
+    } else {
+        fs.writeFileSync(filePath, JSON.stringify({ hasCompletedOnboarding: true }), 'utf-8');
+    }"
+```
+
+> 如果终端提示 `fnm` 命令未找到，请重新打开终端窗口再执行后续命令。
+
+> [!TIP]
+> **关于 `hasCompletedOnboarding`**：
+>
+> 在 `~/.claude.json` 中设置 `"hasCompletedOnboarding": true` 可以**跳过 Claude Code 首次启动的引导流程**（欢迎界面、条款同意、登录提示等）。
+>
+> 但这**不等于跳过 OAuth 登录**。要完全绕过 Anthropic 官方 OAuth，需要三者配合：
+>
+> | 配置 | 作用 |
+> |------|------|
+> | `hasCompletedOnboarding: true`（`~/.claude.json`） | 跳过首次引导流程 |
+> | `disableLoginPrompt: true`（VS Code 扩展设置） | 不弹出登录窗口 |
+> | `ANTHROPIC_BASE_URL` + `apiKeyHelper`（`~/.claude/settings.json`） | 使用第三方 API Key 认证 |
+
+---
+
+## 4. 配置 Claude Code 模型
+
+完成 Claude Code 安装后，请按照以下方式设置环境变量使用 Claude Code 模型。
+
+### macOS 与 Linux
+
+```bash
+export ANTHROPIC_BASE_URL=https://api.kimi.com/coding/
+export ANTHROPIC_API_KEY=sk-kimi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # 这里填在会员页面生成的 API Key
+
+claude
+```
+
+### Windows
+
+```powershell
+$env:ANTHROPIC_BASE_URL="https://api.kimi.com/coding/";
+$env:ANTHROPIC_API_KEY="sk-kimi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # 这里填在会员页面生成的 API Key
+
+claude
+```
+
+### 确认环境变量是否生效
+
+启动 Claude Code 后，在命令输入框输入 `/status`，确认模型状态。
+
+接下来就可以使用 Claude Code 进行开发了！
 
 ---
 
