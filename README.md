@@ -546,6 +546,11 @@ claude
 > }
 > ```
 
+> [!WARNING]
+> **Antigravity IDE 用户注意：** 即使使用了正确的对象格式 `{}`，在 Antigravity 的 IDE 设置中配置 `claudeCode.environmentVariables` 仍可能触发 `V is not iterable` 错误（`TypeError` at `YB` / `hQ` constructor），导致扩展完全无法激活（命令未注册）。
+>
+> **推荐做法：** 不要在 Antigravity IDE 设置中配置 `environmentVariables`。所有 API 相关配置（`apiKeyHelper`、`ANTHROPIC_BASE_URL`）只需放在 `~/.claude/settings.json` 中即可。
+
 ### 关键设置：Disable Login Prompt
 
 > [!IMPORTANT]
