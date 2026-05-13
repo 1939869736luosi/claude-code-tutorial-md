@@ -43,6 +43,8 @@ Windows 只推荐这一套：Git for Windows + PowerShell Native Install。
 
 <https://git-scm.com/downloads/win>
 
+![Git for Windows 下载页](images/image_3.png)
+
 安装时一路保持默认选项即可。Git for Windows 会带上 Git Bash，Claude Code 在原生 Windows 上推荐使用它来执行命令。
 
 然后打开 PowerShell，运行官方 Native Install：
