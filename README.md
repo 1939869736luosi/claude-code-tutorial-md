@@ -87,18 +87,6 @@ Claude Code 的第三方 API 网关配置只写到这一个文件：
 }
 ```
 
-常见示例：
-
-```json
-{
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "env": {
-    "ANTHROPIC_AUTH_TOKEN": "sk-xxxxxxxxxxxxxxxxxxxxxxxx",
-    "ANTHROPIC_BASE_URL": "https://api.kimi.com/coding/"
-  }
-}
-```
-
 保存后重新启动 Claude Code：
 
 ```bash
