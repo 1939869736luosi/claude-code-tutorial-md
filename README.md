@@ -80,12 +80,23 @@ Claude Code 的第三方 API 网关配置只写到这一个文件：
 ```json
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "autoUpdatesChannel": "latest",
+  "cleanupPeriodDays": 90,
   "env": {
     "ANTHROPIC_AUTH_TOKEN": "替换成你的 API Key",
-    "ANTHROPIC_BASE_URL": "替换成你的第三方 API 网关地址"
+    "ANTHROPIC_BASE_URL": "替换成你的第三方 API 网关地址",
+    "API_TIMEOUT_MS": "3000000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "90",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "200000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
+    "CLAUDE_CODE_PROXY_RESOLVES_HOSTS": "1",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }
 ```
+
+如果 `settings.json` 已经存在，只合并这些字段，不要覆盖原文件。
 
 保存后重新启动 Claude Code：
 
@@ -158,7 +169,9 @@ claude
 {
   "claudeCode.disableLoginPrompt": true,
   "claudeCode.autosave": true,
-  "claudeCode.enableNewConversationShortcut": true
+  "claudeCode.enableNewConversationShortcut": true,
+  "claudeCode.preferredLocation": "panel",
+  "claudeCode.selectedModel": "default"
 }
 ```
 
@@ -169,7 +182,9 @@ claude
   "editor.fontSize": 14,
   "claudeCode.disableLoginPrompt": true,
   "claudeCode.autosave": true,
-  "claudeCode.enableNewConversationShortcut": true
+  "claudeCode.enableNewConversationShortcut": true,
+  "claudeCode.preferredLocation": "panel",
+  "claudeCode.selectedModel": "default"
 }
 ```
 
@@ -230,17 +245,12 @@ Developer: Reload Window
 
 ## 4. Windows 找不到 Git Bash
 
-如果 Windows 已安装 Git for Windows，但 Claude Code 仍提示找不到 Git Bash，把 Git Bash 路径也写进同一个 `settings.json`：
+如果 Windows 已安装 Git for Windows，但 Claude Code 仍提示找不到 Git Bash，把 Git Bash 路径也写进同一个 `settings.json`。
 
-```json
-{
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "env": {
-    "ANTHROPIC_AUTH_TOKEN": "替换成你的 API Key",
-    "ANTHROPIC_BASE_URL": "替换成你的第三方 API 网关地址",
-    "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Program Files\\Git\\bin\\bash.exe"
-  }
-}
+不要覆盖前面的配置，只在 `env` 里合并这一项：
+
+```text
+"CLAUDE_CODE_GIT_BASH_PATH": "C:\\Program Files\\Git\\bin\\bash.exe"
 ```
 
 如果你的 Git 安装在别的位置，就把路径改成自己的 `bash.exe` 路径。
